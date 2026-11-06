@@ -1,0 +1,178 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8">
+  <title>Tài liệu Hướng Dẫn Sử Dụng</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    @page { size: A4; margin: 2.5cm; }
+    body { font-family: "Times New Roman", Times, serif; font-size: 13pt; line-height: 1.5; color: #000000; }
+    h1 { text-align: center; font-size: 18pt; font-weight: bold; text-transform: uppercase; margin-bottom: 24pt; color: #000000; }
+    h2 { font-size: 14pt; font-weight: bold; margin-top: 18pt; margin-bottom: 6pt; border-bottom: 1px solid #000000; padding-bottom: 4pt; color: #000000; background-color: #f0f0f0; padding: 5pt; }
+    h3 { font-size: 13pt; font-weight: bold; margin-top: 12pt; margin-bottom: 6pt; color: #000000; }
+    p { margin-top: 0; margin-bottom: 6pt; text-align: justify; }
+    ul { margin-top: 0; margin-bottom: 12pt; }
+    li { text-align: justify; margin-bottom: 4pt; }
+    .note { background-color: #f9f9f9; padding: 10pt; border: 1pt solid #dddddd; font-style: italic; margin-top: 6pt; margin-bottom: 6pt; }
+    .center { text-align: center; font-weight: bold; margin-bottom: 20pt; }
+  </style>
+</head>
+<body>
+  <h1>HƯỚNG DẪN SỬ DỤNG HỆ THỐNG<br>ĐIỂM DANH & QUẢN LÝ ĐƠN PHÉP</h1>
+  <div class="center">Tài liệu chi tiết dành cho Ban Giám Hiệu, Giáo viên và Học sinh/Phụ huynh</div>
+
+  <!-- PHẦN 1: BAN GIÁM HIỆU -->
+  <h2>PHẦN I: DÀNH CHO BAN QUẢN TRỊ (BAN GIÁM HIỆU)</h2>
+  <p>Ban Quản Trị có quyền giám sát toàn bộ hệ thống, thiết lập quy định chung và xem báo cáo. Để đảm bảo tính minh bạch, Ban Quản Trị không có quyền sửa/xóa dữ liệu điểm danh của các lớp.</p>
+
+  <h3>1. Đăng nhập hệ thống</h3>
+  <ul>
+    <li>Mở ứng dụng, chọn thẻ <b>"Quản trị toàn trường (BGH)"</b>.</li>
+    <li>Nhập <b>Mã PIN Quản trị (Master PIN)</b>. <i>(Mặc định ban đầu hệ thống cấp là: Admin@2026!)</i>.</li>
+  </ul>
+
+  <h3>2. Cài đặt Quy định nộp & duyệt phép trễ</h3>
+  <p>Hệ thống hỗ trợ cấu hình thời gian lùi tối đa để học sinh nộp đơn bổ sung và giáo viên duyệt đơn bù sau ngày vắng mặt.</p>
+  <ul>
+    <li>Tại bảng điều khiển, bấm vào nút <b>"⚙️ Cài đặt BGH"</b>.</li>
+    <li>Tại mục <b>Số ngày cho phép nộp & duyệt trễ (N ngày)</b>, chọn hoặc nhập số ngày tối đa cho phép.</li>
+    <li><i>Ví dụ:</i> Nếu cài đặt là <b>2 ngày</b>, học sinh nghỉ học ngày thứ Hai vẫn có thể nộp đơn xin phép bổ sung vào thứ Ba hoặc thứ Tư. Quá hạn 2 ngày, sổ điểm danh thứ Hai sẽ bị khóa vĩnh viễn, học sinh không thể nộp đơn và giáo viên không thể sửa dữ liệu.</li>
+    <li>Nhấn <b>"Lưu quy định"</b>. Quy định mới sẽ ngay lập tức được đồng bộ xuống tất cả các lớp học.</li>
+    <li>BGH cũng có thể tiến hành đổi lại <b>Mã PIN Quản trị</b> tại bảng cài đặt này để tăng cường bảo mật.</li>
+  </ul>
+
+  <h3>3. Giám sát Đơn phép toàn trường</h3>
+  <p>BGH kiểm tra chéo quyết định duyệt đơn của các giáo viên chủ nhiệm để đảm bảo tính khách quan.</p>
+  <ul>
+    <li>Nhấn vào nút <b>"📄 Giám Sát Đơn Phép"</b> trên thanh công cụ.</li>
+    <li>Hệ thống hiển thị danh sách toàn bộ đơn xin phép của mọi lớp theo thời gian thực.</li>
+    <li><b>Bộ lọc linh hoạt:</b> Lọc theo Lớp, theo trạng thái đơn (chờ duyệt, đã duyệt, từ chối), hoặc chọn <i>"Chỉ hiển thị đơn nộp/duyệt trễ"</i>.</li>
+    <li><b>Minh bạch thao tác:</b> Xem cột "Nhật ký xử lý của GV" để biết giáo viên nào đã duyệt đơn và duyệt vào lúc mấy giờ.</li>
+    <li>Bấm <b>"Xem ảnh đơn / giấy khám"</b> để kiểm tra trực tiếp minh chứng (ảnh chụp giấy xin phép, toa thuốc) mà học sinh đã gửi.</li>
+  </ul>
+
+  <h3>4. Xem Báo cáo & Cảnh báo</h3>
+  <ul>
+    <li>Bấm <b>"Cảnh báo cập nhật trễ"</b> để xem danh sách các giáo viên/lớp chưa hoàn thành chốt sổ điểm danh trong ngày hôm nay.</li>
+    <li>Bấm <b>"Báo cáo toàn trường"</b> để xuất file Excel tổng hợp tỷ lệ chuyên cần của tất cả các lớp, phục vụ công tác thi đua tuần/tháng.</li>
+  </ul>
+
+  <!-- PHẦN 2: GIÁO VIÊN CHỦ NHIỆM -->
+  <h2>PHẦN II: DÀNH CHO GIÁO VIÊN CHỦ NHIỆM</h2>
+  <p>Giáo viên chủ nhiệm (GVCN) có toàn quyền quản lý việc điểm danh, nhận đơn, duyệt đơn và quản lý danh sách của lớp mình phụ trách.</p>
+
+  <h3>1. Tạo lớp & Đăng nhập</h3>
+  <ul>
+    <li><b>Tạo lớp mới (Lần đầu sử dụng):</b> Bấm <b>"Tạo Lớp Mới"</b>. Nhập tên lớp (vd: 10A1), thiết lập Mã PIN riêng cho lớp (dùng để đăng nhập sau này) và tải lên file danh sách học sinh (định dạng Excel/CSV) hoặc dán trực tiếp danh sách vào ô văn bản.</li>
+    <li><b>Đăng nhập hàng ngày:</b> Chọn thẻ "Giáo viên chủ nhiệm", nhập đúng Tên lớp và Mã PIN lớp để mở khóa bảng điều khiển lớp học.</li>
+  </ul>
+
+  <h3>2. Cài đặt Cấu hình lớp (Khung giờ & GPS)</h3>
+  <ul>
+    <li>Sau khi vào lớp, bấm <b>"Cấu hình lớp (Giờ & GPS)"</b>.</li>
+    <li>Thiết lập <b>Khung giờ điểm danh</b> (vd: Mở lúc 07:00, Khóa lúc 07:15). Nếu ngoài khung giờ này, học sinh không thể tự điểm danh.</li>
+    <li>Thiết lập <b>Hạn chót duyệt đơn trong ngày</b> (vd: 17:00). Các đơn duyệt sau giờ này (nhưng vẫn cùng ngày) hoặc sang ngày hôm sau sẽ được hệ thống tính là đơn trễ.</li>
+    <li><i>(Tùy chọn)</i> Kích hoạt tính năng <b>GPS</b> và chọn tọa độ vị trí cổng trường/lớp học. Hệ thống sẽ yêu cầu học sinh đứng trong bán kính 100m mới được điểm danh, chống điểm danh hộ từ nhà.</li>
+  </ul>
+
+  <h3>3. Điểm danh hàng ngày</h3>
+  <ul>
+    <li>Mở lịch, chọn ngày hôm nay.</li>
+    <li>Học sinh nào tự điểm danh thành công qua điện thoại sẽ hiển thị trạng thái "Có mặt" và có lưu lại tọa độ GPS.</li>
+    <li>Với các học sinh không dùng thiết bị, GV thao tác điểm danh thủ công bằng cách bấm các nút tương ứng bên cạnh tên học sinh: <b>"+ Có mặt"</b>, <b>"+ Vắng"</b>, <b>"+ Phép"</b>.</li>
+    <li><b>Thêm phép thủ công:</b> Nếu phụ huynh báo ốm qua điện thoại/Zalo, GV bấm nút <b>"+ Phép"</b>, chọn hình thức "Gọi điện/Tin nhắn", ghi chú lý do để lưu đơn.</li>
+  </ul>
+
+  <h3>4. Xử lý & Duyệt đơn nộp bù trễ</h3>
+  <p>Khi học sinh nghỉ học và nộp giấy phép/minh chứng vào vài ngày sau (phải nằm trong giới hạn N ngày do BGH quy định):</p>
+  <ul>
+    <li>GV mở lịch, chọn lùi về <b>ngày mà học sinh đã vắng mặt</b> trong quá khứ.</li>
+    <li>Màn hình sẽ hiển thị dải thông báo màu vàng: <i>"Sổ điểm danh trực tiếp đã khóa. Cho phép tiếp nhận & duyệt đơn xin phép bổ sung trễ..."</i>.</li>
+    <li>Tại tên của học sinh đã nộp đơn bù, sẽ xuất hiện nhãn <b>"⏳ Bổ sung trễ"</b>.</li>
+    <li>GV xem ảnh minh chứng, sau đó bấm <b>"Duyệt"</b> hoặc <b>"Từ chối"</b>. Việc duyệt đơn sẽ cập nhật trạng thái từ "Vắng mặt" thành "Nghỉ có phép". Mọi thao tác đều được hệ thống ghi nhận và gửi về BGH giám sát.</li>
+  </ul>
+
+  <h3>5. Xuất báo cáo điểm danh của lớp</h3>
+  <ul>
+    <li>Bấm nút <b>"Báo cáo thống kê"</b> trên thanh công cụ lớp học.</li>
+    <li>Chọn tháng hoặc khoảng thời gian cần báo cáo.</li>
+    <li>Bấm <b>"Tải file Excel"</b> để lưu bảng điểm danh chi tiết về máy, tiện lợi cho việc nộp báo cáo lên trường hoặc gửi vào nhóm phụ huynh.</li>
+  </ul>
+
+  <!-- PHẦN 3: HỌC SINH VÀ PHỤ HUYNH -->
+  <h2>PHẦN III: DÀNH CHO HỌC SINH & PHỤ HUYNH</h2>
+  <p>Học sinh và Phụ huynh sử dụng hệ thống để điểm danh tự động khi đến trường và nộp đơn xin phép vắng mặt kèm minh chứng nhanh chóng.</p>
+
+  <h3>1. Điểm danh đi học hàng ngày</h3>
+  <ul>
+    <li>Mở ứng dụng, tại màn hình chính chọn thẻ <b>"Học sinh (Điểm danh)"</b>.</li>
+    <li><b>Nhập Mã học sinh</b> (do giáo viên cung cấp) và chọn lớp của mình (vd: 10A1).</li>
+    <li>Bấm nút <b>"Điểm danh ngay"</b>.</li>
+    <div class="note"><b>Lưu ý quan trọng:</b><br>
+    - Học sinh chỉ có thể điểm danh trong <b>khung giờ quy định</b> của lớp (vd: 07:00 - 07:15).<br>
+    - Nếu lớp bật định vị GPS, trình duyệt sẽ yêu cầu cấp quyền "Vị trí" (Location). Bạn phải chọn "Cho phép" (Allow) và phải đang đứng tại trường mới có thể điểm danh thành công.</div>
+  </ul>
+
+  <h3>2. Nộp đơn xin phép vắng mặt</h3>
+  <p>Trong trường hợp ốm đau hoặc có việc bận, học sinh/phụ huynh cần nộp đơn xin phép trực tuyến.</p>
+  <ul>
+    <li>Tại màn hình <b>"Học sinh"</b>, nhập mã học sinh và tên lớp, sau đó bấm nút <b>"Nộp đơn xin phép"</b> (màu vàng).</li>
+    <li><b>Nhập lý do:</b> Ghi rõ lý do xin nghỉ (Vd: Bệnh sốt siêu vi, việc gia đình...).</li>
+    <li><b>Chụp/Tải ảnh minh chứng:</b> Bấm vào khung tải ảnh để chụp hình Giấy xin phép có chữ ký của phụ huynh, Toa thuốc hoặc Giấy khám bệnh hợp lệ. Khuyến khích chụp rõ nét để giáo viên dễ duyệt.</li>
+    <li>Nhấn <b>"Gửi Đơn"</b>. Đơn sẽ ngay lập tức được gửi đến bảng điều khiển của Giáo viên chủ nhiệm.</li>
+  </ul>
+
+  <h3>3. Nộp đơn bổ sung (Nộp bù trễ)</h3>
+  <ul>
+    <li>Nếu hôm vắng mặt không kịp nộp đơn (vd: ốm đột xuất, đi cấp cứu), học sinh có thể <b>nộp đơn bù vào những ngày hôm sau</b>.</li>
+    <li>Thực hiện thao tác nộp đơn xin phép như bình thường (Mục 2). Ở ô <b>"Ngày áp dụng"</b>, hãy chọn lùi về ngày học sinh đã nghỉ để nộp đơn bổ sung.</li>
+    <li><i>Lưu ý:</i> Số ngày được phép lùi phụ thuộc vào quy định của Ban Giám Hiệu. Quá hạn, hệ thống sẽ từ chối tiếp nhận đơn.</li>
+  </ul>
+
+  <h3>4. Theo dõi kết quả duyệt đơn</h3>
+  <p>Học sinh có thể chủ động theo dõi tiến độ duyệt đơn mà không cần phải gọi điện hỏi giáo viên.</p>
+  <ul>
+    <li>Sau khi gửi đơn, hệ thống sẽ báo <b>"Đang chờ duyệt"</b>.</li>
+    <li>Tại giao diện điểm danh của <b>"Học sinh"</b>, sau khi bạn nhập đúng <b>Tên lớp</b> và <b>Mã số học sinh (MSHS)</b>, hệ thống sẽ tự động hiển thị thêm bảng <b>"Kết quả duyệt đơn"</b> ở phía dưới cùng màn hình.</li>
+    <li>Bảng này liệt kê toàn bộ lịch sử các đơn đã nộp kèm theo trạng thái tương ứng:
+      <ul>
+        <li>🟡 <b>Đang chờ duyệt:</b> Đơn đã được gửi nhưng giáo viên chưa xử lý.</li>
+        <li>🟢 <b>Đã duyệt:</b> Giáo viên đã xem minh chứng và cập nhật thành "Nghỉ có phép".</li>
+        <li>🔴 <b>Bị từ chối:</b> Giáo viên từ chối đơn (thường do minh chứng không hợp lệ, ảnh mờ...).</li>
+      </ul>
+    </li>
+  </ul>
+
+  <br>
+  <hr>
+
+  <!-- PHẦN 4: ĐOÀN TRƯỜNG -->
+  <h2>PHẦN IV: DÀNH CHO ĐOÀN TRƯỜNG / BAN CHẤP HÀNH</h2>
+  <p>Đoàn trường là bộ phận chức năng có quyền giám sát toàn trường, theo dõi số liệu chuyên cần, kiểm tra đơn phép và xuất báo cáo tổng hợp, tuân thủ đúng phân cấp quản lý.</p>
+
+  <h3>1. Đăng nhập hệ thống</h3>
+  <ul>
+    <li>Mở ứng dụng, chọn thẻ <b>"Đoàn trường"</b> trên thanh vai trò ở đầu trang.</li>
+    <li>Nhập <b>Mã PIN Đoàn trường (Union PIN)</b>. <i>(Mặc định ban đầu hệ thống cấp là: DoanTruong@2026!)</i>.</li>
+  </ul>
+
+  <h3>2. Quyền hạn và giới hạn phân cấp</h3>
+  <ul>
+    <li><b>Giám sát toàn trường:</b> Xem danh sách toàn bộ các lớp trong trường, theo dõi số liệu sĩ số, số mặt, số vắng và tỷ lệ chuyên cần thời gian thực.</li>
+    <li><b>Giám sát đơn phép:</b> Xem nhật ký và chi tiết ảnh minh chứng đơn xin phép của mọi học sinh toàn trường.</li>
+    <li><b>Báo cáo & Cờ báo:</b> Xem danh sách cờ báo bất thường và trích xuất báo cáo toàn trường.</li>
+    <li><b>Giới hạn quan trọng:</b> Theo phân cấp, Đoàn trường có quyền giám sát tương tự Ban Giám Hiệu nhưng <b>không có quyền xóa bất kỳ dữ liệu nào</b> và <b>không có quyền thay đổi cấu hình hệ thống / cài đặt BGH</b> (số ngày duyệt trễ, Master PIN).</li>
+  </ul>
+
+  <br>
+  <hr>
+  <p class="center" style="font-size: 11pt; color: #555555; margin-top: 20pt;">Tài liệu được kết xuất tự động từ Hệ thống Quản lý Điểm danh thông minh.</p>
+</body>
+</html>

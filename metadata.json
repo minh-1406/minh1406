@@ -1,0 +1,6 @@
+{
+  "name": "Điểm Danh GPS",
+  "description": "Ứng dụng điểm danh lớp học hàng ngày theo định vị GPS, quản lý danh sách học sinh, khung giờ tự động và duyệt đơn xin phép.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
