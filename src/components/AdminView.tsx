@@ -624,6 +624,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
     const roster = getRoster(lop);
     const sName = rec?.name || roster.find((s) => s.id === studentId)?.name || studentId;
 
+    if (rec?.isLockedAbsent) {
+      alert(`⚠️ QUY CHẾ KỶ LUẬT RĂN ĐE:\nHọc sinh "${sName}" (${studentId}) đang bị KHÓA CỨNG VẮNG KHÔNG PHÉP do vi phạm gian lận điểm danh (dùng chung thiết bị điểm danh cho bạn khác).\n\nTheo quy chế của hệ thống, hình phạt này là TUYỆT ĐỐI KHÔNG THỂ THAY ĐỔI, kể cả Ban Giám Hiệu hay GVCN!`);
+      return;
+    }
+
     if (!freshDay.records[studentId]) {
       freshDay.records[studentId] = {
         name: sName,
@@ -1673,7 +1678,14 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                   {s.id}
                                 </td>
                                 <td className="py-2 px-3 text-[#1B241F] font-bold">
-                                  {s.name}
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span>{s.name}</span>
+                                    {rec?.flagged && (
+                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-red-100 text-red-800 border border-red-300 inline-flex items-center gap-0.5 shadow-2xs">
+                                        🚩 Trùng thiết bị
+                                      </span>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="py-2 px-3 text-center">
                                   {status === 'present' && (
@@ -1728,7 +1740,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                   {status === 'excused_pending' && (
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F5E6D0] text-[#7A521E]">
                                       <Clock className="w-3 h-3" />
-                                      Chờ duyệt đơn
+                                      Chờ duyệt
                                     </span>
                                   )}
                                   {status === 'excused_rejected' && (
@@ -1738,10 +1750,16 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                     </span>
                                   )}
                                   {status === 'absent' && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F5DED5] text-[#7A3115]">
-                                      <XCircle className="w-3 h-3" />
-                                      Vắng mặt
-                                    </span>
+                                    rec?.isLockedAbsent ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-red-700 text-white shadow-xs">
+                                        🔒 Khóa Vắng KP (Kỷ luật)
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F5DED5] text-[#7A3115]">
+                                        <XCircle className="w-3 h-3" />
+                                        Vắng mặt
+                                      </span>
+                                    )
                                   )}
                                   {status === 'none' && (
                                     <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#EAE7DD] text-[#5B6A61]">
@@ -1750,7 +1768,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                   )}
                                 </td>
                                 <td className="py-2 px-3 text-[#5B6A61] font-mono text-[11px]">
-                                  {fmtTime(rec?.checkinTime)}
+                                  <div>{fmtTime(rec?.checkinTime)}</div>
+                                  {rec?.flagged && (
+                                    <div className="mt-1 text-[10px] font-bold text-red-800 bg-red-50 p-1 rounded border border-red-200">
+                                      ⚠️ {rec.flagReason || 'Trùng thiết bị điểm danh hộ'}
+                                    </div>
+                                  )}
                                 </td>
                                 <td className="py-2 px-3 text-[#5B6A61] text-[11px]">
                                   {rec?.distance !== undefined

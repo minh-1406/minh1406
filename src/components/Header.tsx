@@ -5,6 +5,7 @@ import {
   Users,
   Lock,
   Unlock,
+  BookOpen,
 } from 'lucide-react';
 import { UserRole } from '../types';
 import { getSchoolId, getSchoolName, getSchoolLogo } from '../utils/storage';
@@ -19,6 +20,7 @@ interface HeaderProps {
   onLockAdmin: () => void;
   isUnionUnlocked: boolean;
   onLockUnion: () => void;
+  onOpenGuide?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -30,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLockAdmin,
   isUnionUnlocked,
   onLockUnion,
+  onOpenGuide,
 }) => {
   const [schoolId, setSchoolId] = useState<string>(getSchoolId());
   const [schoolName, setSchoolName] = useState<string>(getSchoolName());
@@ -203,6 +206,19 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Lock className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Khóa Đoàn</span>
+          </button>
+        )}
+
+        {onOpenGuide && (
+          <button
+            id="btnOpenUserGuide"
+            type="button"
+            onClick={onOpenGuide}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#FAF9F5] border-[1.5px] border-[#1F3B32] hover:bg-[#EEF1E7] text-[#1F3B32] rounded-full font-bold text-xs sm:text-sm transition-colors cursor-pointer shadow-xs"
+            title="Xem cẩm nang hướng dẫn sử dụng chi tiết"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-[#3E7C6B]" />
+            <span className="hidden sm:inline">Hướng dẫn</span>
           </button>
         )}
       </div>

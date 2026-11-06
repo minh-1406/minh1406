@@ -132,6 +132,10 @@ export const AdminLiveActivityModal: React.FC<AdminLiveActivityModalProps> = ({
                     details = rec.lastUpdatedAction || 'GVCN đánh dấu thủ công';
                   }
 
+                  if (rec.flagged) {
+                    details += ` • ⚠️ CẢNH BÁO GIAN LẬN: ${rec.flagReason || 'Thiết bị này vừa dùng để điểm danh cho học sinh khác hôm nay'}`;
+                  }
+
                   list.push({
                     id: `${slug}-${dateStr}-${studentId}-checkin`,
                     lop: lopName,

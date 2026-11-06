@@ -668,6 +668,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     status: 'present' | 'absent' | 'late'
   ) => {
     if (!selectedLop || !selectedDate) return;
+    const freshDay = getDayData(selectedLop, selectedDate);
+    const existing = freshDay.records[studentId];
+    if (existing?.isLockedAbsent) {
+      showFeedback(`Học sinh "${studentName}" đang bị KHÓA CỨNG VẮNG KHÔNG PHÉP do gian lận thiết bị. Theo quy chế kỷ luật, không ai có thể thay đổi trạng thái này (kể cả GVCN hay BGH).`, 'error');
+      return;
+    }
     setManualAttendanceModal({
       isOpen: true,
       studentId,
@@ -728,6 +734,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     const freshDay = getDayData(selectedLop, selectedDate);
     const existingRec = freshDay.records[studentId];
 
+    if (existingRec?.isLockedAbsent) {
+      showFeedback(`Học sinh "${studentName}" đang bị kỷ luật KHÓA VẮNG KHÔNG PHÉP do gian lận thiết bị. Không được phép chỉnh sửa!`, 'error');
+      setManualAttendanceModal(null);
+      return;
+    }
+
     if (
       status === 'present' &&
       existingRec &&
@@ -784,6 +796,13 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   };
 
   const handleManualProxy = (studentId: string, studentName: string) => {
+    if (!selectedLop || !selectedDate) return;
+    const freshDay = getDayData(selectedLop, selectedDate);
+    const rec = freshDay.records[studentId];
+    if (rec?.isLockedAbsent) {
+      showFeedback(`Học sinh "${studentName}" đang bị KHÓA CỨNG VẮNG KHÔNG PHÉP do gian lận thiết bị. Không thể điểm danh hộ!`, 'error');
+      return;
+    }
     setManualProxyModal({ isOpen: true, studentId, studentName });
   };
 
@@ -792,6 +811,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     const { studentId, studentName } = manualProxyModal;
     
     const freshDay = getDayData(selectedLop, selectedDate);
+    const existingRec = freshDay.records[studentId];
+    if (existingRec?.isLockedAbsent) {
+      showFeedback(`Học sinh "${studentName}" bị kỷ luật Khóa Vắng không phép do gian lận thiết bị. Không thể điểm danh hộ!`, 'error');
+      setManualProxyModal(null);
+      return;
+    }
     const currentCfg = getClassConfig(selectedLop);
     const nowKey = localTimeKey();
     const isLate = Boolean(currentCfg?.endTime && nowKey > currentCfg.endTime);
@@ -826,10 +851,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   const handleManualExcuse = (studentId: string, studentName: string) => {
     if (!selectedLop || !selectedDate) return;
     
-    // GVCN luôn có quyền ghi nhận Vắng có phép, bỏ check deadline cho GVCN.
-    
     const freshDay = getDayData(selectedLop, selectedDate);
     const rec = freshDay.records[studentId];
+    if (rec?.isLockedAbsent) {
+      showFeedback(`Học sinh "${studentName}" đang bị KHÓA CỨNG VẮNG KHÔNG PHÉP do gian lận thiết bị. Không thể chuyển sang Vắng có phép!`, 'error');
+      return;
+    }
     
     let defaultReason = '';
     let defaultMethod: 'call' | 'message' | 'paper' | 'pending' = 'call';
@@ -919,6 +946,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     }
 
     const freshDay = getDayData(selectedLop, selectedDate);
+    const existingRec = freshDay.records[studentId];
+    if (existingRec?.isLockedAbsent) {
+      showFeedback(`Học sinh "${studentName}" đang bị KHÓA CỨNG VẮNG KHÔNG PHÉP do gian lận thiết bị. Không thể đổi thành Vắng có phép!`, 'error');
+      setManualExcuseModal(null);
+      return;
+    }
 
     if (!freshDay.records[studentId]) {
       freshDay.records[studentId] = {
@@ -1049,6 +1082,11 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     const rec = freshDay.records[studentId];
     const sName = rec?.name || roster.find(s => s.id === studentId)?.name || studentId;
 
+    if (rec?.isLockedAbsent) {
+      showFeedback(`Học sinh "${sName}" đã bị KHÓA CỨNG VẮNG KHÔNG PHÉP do gian lận thiết bị. Không ai có thể chỉnh sửa trạng thái này!`, 'error');
+      return;
+    }
+
     if (!freshDay.records[studentId]) {
       freshDay.records[studentId] = {
         name: sName,
@@ -1160,6 +1198,11 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     const rec = freshDay.records[studentId];
     if (!rec) return;
 
+    if (rec.isLockedAbsent) {
+      showFeedback(`Học sinh "${rec.name}" đang bị KHÓA CỨNG VẮNG KHÔNG PHÉP do gian lận thiết bị. Không thể thay đổi!`, 'error');
+      return;
+    }
+
     if (decision === 'approve') {
       const currentCfg = getClassConfig(selectedLop);
       const checkinTimeKey = rec.checkinTime ? localTimeKey(new Date(rec.checkinTime)) : localTimeKey();
@@ -1233,6 +1276,10 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
     const freshDay = getDayData(selectedLop, selectedDate);
     if (freshDay.records[studentId]) {
+      if (freshDay.records[studentId].isLockedAbsent) {
+        showFeedback(`Học sinh đang bị KHÓA CỨNG VẮNG KHÔNG PHÉP do gian lận thiết bị. Không thể duyệt phép!`, 'error');
+        return;
+      }
       freshDay.records[studentId].status = decision;
       freshDay.records[studentId].excuseDecidedAt = Date.now();
       freshDay.records[studentId].lastUpdatedByTeacherAt = Date.now();
@@ -2820,24 +2867,37 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
                             {/* Col 3: Trạng thái & Nguồn */}
                             <td className="py-3 px-3 space-y-1.5">
-                              {statusBadge}
-                              <select
-                                value={status}
-                                onChange={(e) => {
-                                  const newStatus = e.target.value;
-                                  if (newStatus === 'present') handleManualAttendance(student.id, student.name, 'present');
-                                  else if (newStatus === 'late') handleManualAttendance(student.id, student.name, 'late');
-                                  else if (newStatus === 'absent') handleAdjustToAbsent(student.id, 'GVCN điều chỉnh: Vắng không phép');
-                                  else if (newStatus === 'excused_pending') handleManualExcuse(student.id, student.name);
-                                }}
-                                className="w-full text-xs font-bold bg-[#F7F6F0] border border-[#D7DCCB] rounded-lg px-2 py-1 cursor-pointer hover:border-[#3E7C6B] focus:outline-none"
-                              >
-                                <option value="none">Chưa ĐD</option>
-                                <option value="present">Có mặt</option>
-                                <option value="late">Đi muộn</option>
-                                <option value="excused_pending">Vắng có phép</option>
-                                <option value="absent">Vắng không phép</option>
-                              </select>
+                              {rec?.isLockedAbsent ? (
+                                <div className="space-y-1">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-red-700 text-white shadow-xs">
+                                    🔒 Khóa Vắng KP (Gian lận)
+                                  </span>
+                                  <div className="text-[10px] text-red-700 font-bold leading-tight">
+                                    Trùng thiết bị điểm danh hộ: Không thể thay đổi
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  {statusBadge}
+                                  <select
+                                    value={status}
+                                    onChange={(e) => {
+                                      const newStatus = e.target.value;
+                                      if (newStatus === 'present') handleManualAttendance(student.id, student.name, 'present');
+                                      else if (newStatus === 'late') handleManualAttendance(student.id, student.name, 'late');
+                                      else if (newStatus === 'absent') handleAdjustToAbsent(student.id, 'GVCN điều chỉnh: Vắng không phép');
+                                      else if (newStatus === 'excused_pending') handleManualExcuse(student.id, student.name);
+                                    }}
+                                    className="w-full text-xs font-bold bg-[#F7F6F0] border border-[#D7DCCB] rounded-lg px-2 py-1 cursor-pointer hover:border-[#3E7C6B] focus:outline-none"
+                                  >
+                                    <option value="none">Chưa ĐD</option>
+                                    <option value="present">Có mặt</option>
+                                    <option value="late">Đi muộn</option>
+                                    <option value="excused_pending">Vắng có phép</option>
+                                    <option value="absent">Vắng không phép</option>
+                                  </select>
+                                </>
+                              )}
                             </td>
 
                             {/* Col 4: Giờ & GPS */}
@@ -2938,7 +2998,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
                             {/* Col 6: Thao tác (GVCN) */}
                             <td className="py-3 px-3 text-right">
-                              <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                              {rec?.isLockedAbsent ? (
+                                <span className="inline-block px-2.5 py-1 bg-red-100 text-red-800 border border-red-300 rounded-lg text-[11px] font-extrabold" title="Hình phạt kỷ luật gian lận điểm danh: Không ai có thể chỉnh sửa">
+                                  🔒 Bị khóa cứng Vắng KP
+                                </span>
+                              ) : (
+                                <div className="flex items-center justify-end gap-1.5 flex-wrap">
                                 {status === 'proxy_pending' && (
                                   <button
                                     type="button"
@@ -3055,6 +3120,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                                   </button>
                                 </div>
                               </div>
+                              )}
                             </td>
                           </tr>
                         );

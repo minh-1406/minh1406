@@ -13,6 +13,7 @@ import { AdminLockScreen } from './components/AdminLockScreen';
 import { UnionLockScreen } from './components/UnionLockScreen';
 import { StudentView } from './components/StudentView';
 import { LightboxModal } from './components/LightboxModal';
+import { UserGuideModal } from './components/UserGuideModal';
 import { UserRole, TeacherAuthState, AdminAuthState, UnionAuthState } from './types';
 import {
   initializeSampleDataIfEmpty,
@@ -26,6 +27,7 @@ export default function App() {
   const [role, setRole] = useState<UserRole>('student');
   const [selectedLop, setSelectedLop] = useState<string>('');
   const [lightboxSrc, setLightboxSrc] = useState<any>(null);
+  const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
   const [currentSchoolId, setCurrentSchoolId] = useState<string>(() => getSchoolId());
 
   // Teacher Authentication state
@@ -222,6 +224,7 @@ export default function App() {
           onLockAdmin={handleLockAdmin}
           isUnionUnlocked={unionAuth.isAuthenticated}
           onLockUnion={handleLockUnion}
+          onOpenGuide={() => setShowGuideModal(true)}
         />
 
         {/* Dynamic Views */}
@@ -354,6 +357,12 @@ export default function App() {
       <LightboxModal
         src={lightboxSrc}
         onClose={() => setLightboxSrc(null)}
+      />
+
+      {/* Interactive User Guide Modal */}
+      <UserGuideModal
+        isOpen={showGuideModal}
+        onClose={() => setShowGuideModal(false)}
       />
     </div>
   );

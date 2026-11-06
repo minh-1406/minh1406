@@ -10,6 +10,8 @@ import {
   Clock,
   Navigation,
   History,
+  ShieldAlert,
+  Lock,
 } from 'lucide-react';
 import {
   getLopList,
@@ -156,6 +158,17 @@ export const StudentView: React.FC<StudentViewProps> = ({
       return;
     }
 
+    const cfg = getClassConfig(selectedLop);
+    if (!cfg || cfg.lat === 0) {
+      setMonitorStatus({ type: 'err', msg: 'Lớp này chưa được giáo viên cấu hình vị trí GPS. Không thể điểm danh hộ!' });
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      setMonitorStatus({ type: 'err', msg: 'Trình duyệt của bạn không hỗ trợ định vị GPS.' });
+      return;
+    }
+
     const exifCheck = await verifyPhotoExifDate(monitorPhotoFile);
     if (!exifCheck.isValid) {
       setMonitorStatus({ type: 'err', msg: exifCheck.errorMsg || 'Ảnh không hợp lệ để chống điểm danh giả!' });
@@ -163,93 +176,123 @@ export const StudentView: React.FC<StudentViewProps> = ({
     }
 
     setIsSubmittingMonitor(true);
-    setMonitorStatus({ type: 'wait', msg: 'Đang lưu điểm danh hộ cho học sinh đã chọn...' });
+    setMonitorStatus({ type: 'wait', msg: 'Đang xác định vị trí GPS của Ban Cán Sự để xác thực phạm vi lớp học...' });
 
-    try {
-      const today = localDateKey();
-      const freshDay = getDayData(selectedLop, today);
-      const targetStudent = rosterForMonitor.find(s => s.id === selectedProxyStudentId);
-      const currentRec = freshDay.records[selectedProxyStudentId];
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const distance = haversine(lat, lng, cfg.lat, cfg.lng);
 
-      if (currentRec && (currentRec.checkinSource === 'manual' || currentRec.lastUpdatedAction?.includes('GVCN'))) {
-        setMonitorStatus({
-          type: 'err',
-          msg: `Giáo viên chủ nhiệm (GVCN) đã điểm danh cho học sinh ${targetStudent?.name} rồi. Ban Cán Sự không thể gửi ảnh điểm danh hộ nữa!`,
-        });
-        return;
-      }
+          if (distance > cfg.radius) {
+            setMonitorStatus({
+              type: 'err',
+              msg: `BCS đang ở cách vị trí lớp ${Math.round(distance)}m, nằm ngoài phạm vi cho phép (${cfg.radius}m). Điểm danh hộ bị từ chối!`,
+            });
+            setIsSubmittingMonitor(false);
+            return;
+          }
 
-      if (currentRec?.status === 'present' || currentRec?.status === 'late') {
-        if (currentRec.checkinSource === 'gps') {
-          setMonitorStatus({ type: 'err', msg: `Học sinh ${targetStudent?.name} đã tự điểm danh GPS có mặt hôm nay!` });
-          return;
+          const today = localDateKey();
+          const freshDay = getDayData(selectedLop, today);
+          const targetStudent = rosterForMonitor.find(s => s.id === selectedProxyStudentId);
+          const currentRec = freshDay.records[selectedProxyStudentId];
+
+          if (currentRec && (currentRec.checkinSource === 'manual' || currentRec.lastUpdatedAction?.includes('GVCN'))) {
+            setMonitorStatus({
+              type: 'err',
+              msg: `Giáo viên chủ nhiệm (GVCN) đã điểm danh cho học sinh ${targetStudent?.name} rồi. Ban Cán Sự không thể gửi ảnh điểm danh hộ nữa!`,
+            });
+            setIsSubmittingMonitor(false);
+            return;
+          }
+
+          if (currentRec?.status === 'present' || currentRec?.status === 'late') {
+            if (currentRec.checkinSource === 'gps') {
+              setMonitorStatus({ type: 'err', msg: `Học sinh ${targetStudent?.name} đã tự điểm danh GPS có mặt hôm nay!` });
+              setIsSubmittingMonitor(false);
+              return;
+            }
+            setMonitorStatus({
+              type: 'err',
+              msg: `Học sinh ${targetStudent?.name} đã được điểm danh rồi. Ban Cán Sự không thể gửi thêm ảnh điểm danh hộ!`,
+            });
+            setIsSubmittingMonitor(false);
+            return;
+          }
+
+          if (
+            currentRec &&
+            (currentRec.status === 'excused_pending' ||
+              currentRec.status === 'excused_approved' ||
+              currentRec.status === 'excused_rejected' ||
+              currentRec.excuseReason)
+          ) {
+            setMonitorStatus({
+              type: 'err',
+              msg: `Học sinh ${targetStudent?.name} đã xin phép nghỉ học hôm nay. Chỉ có trạng thái Vắng có phép hoặc Vắng không phép theo duyệt của GVCN, không thể điểm danh có mặt!`,
+            });
+            setIsSubmittingMonitor(false);
+            return;
+          }
+
+          const dupCheck = checkDuplicatePhotoInClass(selectedLop, today, selectedProxyStudentId, monitorPhotoPreview);
+          if (dupCheck.isDuplicate) {
+            setMonitorStatus({
+              type: 'err',
+              msg: `Cảnh báo gian lận ảnh: Ảnh này đã được sử dụng cho học sinh ${dupCheck.usedByStudentName} (${dupCheck.usedByStudentId})! Mỗi ảnh chụp chỉ được dùng cho 1 học sinh duy nhất. Vui lòng chụp ảnh mới riêng cho học sinh này!`,
+            });
+            setIsSubmittingMonitor(false);
+            return;
+          }
+
+          const submitNow = Date.now();
+          const capTime = monitorPhotoCaptureTime || format24hDateTime(exifCheck.captureDateTime || monitorPhotoFile.lastModified);
+
+          freshDay.records[selectedProxyStudentId] = {
+            name: targetStudent?.name || selectedProxyStudentId,
+            status: 'proxy_pending',
+            checkinSource: 'monitor_proxy',
+            checkinTime: submitNow,
+            distance,
+            proxyPhoto: monitorPhotoPreview,
+            proxyPhotoCaptureTime: capTime,
+            excusePhoto: monitorPhotoPreview,
+            excusePhotoCaptureTime: capTime,
+            excuseSubmittedAt: submitNow,
+            lastUpdatedByTeacherAt: submitNow,
+            lastUpdatedAction: `BCS điểm danh hộ (${targetStudent?.name}) - Có mặt tạm thời (Cách lớp ~${Math.round(distance)}m, Chờ GVCN duyệt)`,
+          };
+
+          setDayData(selectedLop, today, freshDay);
+          await syncSaveDayData(selectedLop, today, freshDay);
+
+          setMonitorStatus({
+            type: 'ok',
+            msg: `Đã gửi điểm danh hộ thành công cho ${targetStudent?.name} (${selectedProxyStudentId}) kèm ảnh (Vị trí hợp lệ cách lớp ~${Math.round(distance)}m)! Vui lòng chờ GVCN duyệt.`
+          });
+
+          setMonitorPhotoFile(null);
+          setMonitorPhotoPreview('');
+          setMonitorPhotoCaptureTime('');
+          setMonitorPhotoSubmitTime('');
+          setSelectedProxyStudentId('');
+        } catch (err: any) {
+          setMonitorStatus({ type: 'err', msg: `Lỗi khi lưu: ${err?.message || err}` });
+        } finally {
+          setIsSubmittingMonitor(false);
         }
+      },
+      (err) => {
         setMonitorStatus({
           type: 'err',
-          msg: `Học sinh ${targetStudent?.name} đã được điểm danh rồi. Ban Cán Sự không thể gửi thêm ảnh điểm danh hộ!`,
+          msg: `Không lấy được vị trí GPS của BCS: ${err.message}. Hãy cấp quyền vị trí cho trình duyệt và thử lại.`,
         });
-        return;
-      }
-
-      if (
-        currentRec &&
-        (currentRec.status === 'excused_pending' ||
-          currentRec.status === 'excused_approved' ||
-          currentRec.status === 'excused_rejected' ||
-          currentRec.excuseReason)
-      ) {
-        setMonitorStatus({
-          type: 'err',
-          msg: `Học sinh ${targetStudent?.name} đã xin phép nghỉ học hôm nay. Chỉ có trạng thái Vắng có phép hoặc Vắng không phép theo duyệt của GVCN, không thể điểm danh có mặt!`,
-        });
-        return;
-      }
-
-      const dupCheck = checkDuplicatePhotoInClass(selectedLop, today, selectedProxyStudentId, monitorPhotoPreview);
-      if (dupCheck.isDuplicate) {
-        setMonitorStatus({
-          type: 'err',
-          msg: `Cảnh báo gian lận ảnh: Ảnh này đã được sử dụng cho học sinh ${dupCheck.usedByStudentName} (${dupCheck.usedByStudentId})! Mỗi ảnh chụp chỉ được dùng cho 1 học sinh duy nhất. Vui lòng chụp ảnh mới riêng cho học sinh này!`,
-        });
-        return;
-      }
-
-      const submitNow = Date.now();
-      const capTime = monitorPhotoCaptureTime || format24hDateTime(exifCheck.captureDateTime || monitorPhotoFile.lastModified);
-
-      freshDay.records[selectedProxyStudentId] = {
-        name: targetStudent?.name || selectedProxyStudentId,
-        status: 'proxy_pending',
-        checkinSource: 'monitor_proxy',
-        checkinTime: submitNow,
-        proxyPhoto: monitorPhotoPreview,
-        proxyPhotoCaptureTime: capTime,
-        excusePhoto: monitorPhotoPreview,
-        excusePhotoCaptureTime: capTime,
-        excuseSubmittedAt: submitNow,
-        lastUpdatedByTeacherAt: submitNow,
-        lastUpdatedAction: `BCS điểm danh hộ (${targetStudent?.name}) - Có mặt tạm thời (Chờ GVCN duyệt)`,
-      };
-
-      setDayData(selectedLop, today, freshDay);
-      await syncSaveDayData(selectedLop, today, freshDay);
-
-      setMonitorStatus({
-        type: 'ok',
-        msg: `Đã gửi điểm danh hộ thành công cho ${targetStudent?.name} (${selectedProxyStudentId}) kèm 1 ảnh minh chứng riêng! Vui lòng chờ GVCN duyệt.`
-      });
-
-      // Reset photo and student selection after successful submit
-      setMonitorPhotoFile(null);
-      setMonitorPhotoPreview('');
-      setMonitorPhotoCaptureTime('');
-      setMonitorPhotoSubmitTime('');
-      setSelectedProxyStudentId('');
-    } catch (err: any) {
-      setMonitorStatus({ type: 'err', msg: `Lỗi khi lưu: ${err?.message || err}` });
-    } finally {
-      setIsSubmittingMonitor(false);
-    }
+        setIsSubmittingMonitor(false);
+      },
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
   };
 
   // Class window info
@@ -412,6 +455,14 @@ export const StudentView: React.FC<StudentViewProps> = ({
       return;
     }
 
+    if (day.records[cleanId]?.isLockedAbsent) {
+      setCheckinStatus({
+        type: 'err',
+        msg: 'Bạn đã bị hệ thống KHÓA CỨNG VẮNG KHÔNG PHÉP do vi phạm gian lận điểm danh hộ! Trạng thái này là vĩnh viễn, không ai (kể cả GVCN hay BGH) có thể thay đổi được.',
+      });
+      return;
+    }
+
     if (day.records[cleanId] && (day.records[cleanId].status === 'present' || day.records[cleanId].status === 'late')) {
       setCheckinStatus({
         type: 'err',
@@ -472,25 +523,56 @@ export const StudentView: React.FC<StudentViewProps> = ({
           const deviceUsageKey = `deviceUsage:${lopSlug(selectedLop)}:${today}`;
           const deviceUsage = sGet<Record<string, string>>(deviceUsageKey, {});
 
+          // SEVERE FRAUD PENALTY: 1 device checking in for multiple students
+          const prevStudentId = deviceUsage[fp];
+          if (prevStudentId && prevStudentId.trim().toLowerCase() !== cleanId.toLowerCase()) {
+            const freshDay = getDayData(selectedLop, today);
+            const penaltyMsg = `Vi phạm nghiêm trọng: Dùng thiết bị vừa điểm danh cho học sinh ${prevStudentId} để điểm danh hộ gian lận`;
+
+            freshDay.records[cleanId] = {
+              name: cleanName || cleanId,
+              status: 'absent',
+              checkinSource: 'gps',
+              checkinTime: Date.now(),
+              distance,
+              flagged: true,
+              flagReason: `Thiết bị này vừa dùng để điểm danh cho học sinh ${prevStudentId} hôm nay — Gian lận điểm danh hộ`,
+              isLockedAbsent: true,
+              lockedPenaltyReason: penaltyMsg,
+              lastUpdatedByTeacherAt: Date.now(),
+              lastUpdatedAction: 'Hệ thống tự động KHÓA VẮNG KHÔNG PHÉP (Vi phạm: Trùng thiết bị điểm danh hộ)',
+            };
+            setDayData(selectedLop, today, freshDay);
+            syncSaveDayData(selectedLop, today, freshDay);
+            syncAppendClassLog(selectedLop, {
+              actorRole: 'student',
+              actorName: cleanName || cleanId,
+              actorId: cleanId,
+              actionTitle: `HỆ THỐNG KHÓA VẮNG KHÔNG PHÉP: ${cleanName} (${cleanId})`,
+              details: `Phát hiện dùng 1 máy điểm danh nhiều bạn (máy vừa điểm danh cho ${prevStudentId}). Khóa cứng VẮNG KHÔNG PHÉP theo quy chế răn đe, không ai có thể thay đổi.`,
+            });
+
+            setCheckinStatus({
+              type: 'err',
+              msg: `CẢNH BÁO VI PHẠM GIAN LẬN: Thiết bị này vừa dùng để điểm danh cho học sinh ${prevStudentId} hôm nay! Theo quy chế răn đe gian lận điểm danh, hệ thống tự động xử phạt VẮNG KHÔNG PHÉP và KHÓA CỨNG hôm nay. Không ai (kể cả GVCN hay BGH) có thể thay đổi trạng thái này!`,
+            });
+            setIsCheckingIn(false);
+            return;
+          }
+
           let flagged = false;
           let flagReason = '';
 
-          if (deviceUsage[fp] && deviceUsage[fp] !== cleanId) {
+          const historyKey = `deviceHistory:${cleanId}`;
+          const history = sGet<string[]>(historyKey, []);
+          if (history.length > 0 && !history.includes(fp)) {
             flagged = true;
             flagReason =
-              'Thiết bị này vừa dùng để điểm danh cho một học sinh khác hôm nay — có thể là điểm danh hộ.';
-          } else {
-            const historyKey = `deviceHistory:${cleanId}`;
-            const history = sGet<string[]>(historyKey, []);
-            if (history.length > 0 && !history.includes(fp)) {
-              flagged = true;
-              flagReason =
-                'Học sinh điểm danh từ một thiết bị khác với các lần trước.';
-            }
-            if (!history.includes(fp)) {
-              history.push(fp);
-              sSet(historyKey, history.slice(-5));
-            }
+              'Học sinh điểm danh từ một thiết bị khác với các lần trước.';
+          }
+          if (!history.includes(fp)) {
+            history.push(fp);
+            sSet(historyKey, history.slice(-5));
           }
 
           deviceUsage[fp] = cleanId;
@@ -591,6 +673,14 @@ export const StudentView: React.FC<StudentViewProps> = ({
     }
 
     const day = getDayData(selectedLop, excuseDate);
+    if (day.records[cleanId]?.isLockedAbsent) {
+      setExcuseStatus({
+        type: 'err',
+        msg: 'Bạn đã bị hệ thống KHÓA CỨNG VẮNG KHÔNG PHÉP do vi phạm gian lận điểm danh! Không thể nộp đơn xin phép để thay đổi trạng thái này.',
+      });
+      return;
+    }
+
     if (day.records[cleanId] && day.records[cleanId].status === 'present') {
       setExcuseStatus({
         type: 'err',
@@ -709,6 +799,11 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
       const freshDay = getDayData(selectedLop, supplementModalDate);
       const rec = freshDay.records[cleanId];
+      if (rec?.isLockedAbsent) {
+        alert('Học sinh đang bị kỷ luật Khóa Vắng không phép do gian lận điểm danh thiết bị. Không thể gửi hoặc bổ sung đơn nghỉ!');
+        setIsSubmittingSupplement(false);
+        return;
+      }
       if (rec) {
         rec.excusePhoto = compressedDataUrl;
         rec.excusePhotoCaptureTime = captureTime;
@@ -771,6 +866,13 @@ export const StudentView: React.FC<StudentViewProps> = ({
       const freshDay = getDayData(selectedLop, today);
       const rec = freshDay.records[cleanId];
       if (!rec) return;
+      if (rec.isLockedAbsent) {
+        setCheckinStatus({
+          type: 'err',
+          msg: 'Bạn đang bị kỷ luật Khóa Vắng không phép do gian lận thiết bị điểm danh. Không thể bổ sung đơn hoặc thay đổi trạng thái!',
+        });
+        return;
+      }
 
       rec.excusePhoto = compressedDataUrl;
       rec.excusePhotoCaptureTime = captureTime;
@@ -883,11 +985,35 @@ export const StudentView: React.FC<StudentViewProps> = ({
           {windowInfo}
         </div>
 
-        {/* Kiểm tra các trạng thái đặc biệt: Đã có đơn phép / Có mặt tạm thời (BCS) / Nợ đơn */}
+        {/* Kiểm tra các trạng thái đặc biệt: Khóa Vắng KP gian lận / Đã có đơn phép / Có mặt tạm thời (BCS) / Nợ đơn */}
         {(() => {
           const todayK = localDateKey();
           const todayD = selectedLop && studentId.trim() ? getDayData(selectedLop, todayK) : null;
           const todayR = todayD && studentId.trim() ? todayD.records[studentId.trim()] : null;
+
+          // TH0: KỶ LUẬT KHÓA CỨNG VẮNG KHÔNG PHÉP DO DÙNG CHUNG THIẾT BỊ ĐIỂM DANH HỘ
+          if (todayR?.isLockedAbsent) {
+            return (
+              <div className="p-4 bg-red-100 border-2 border-red-600 rounded-xl space-y-3 text-center shadow-xs">
+                <div className="flex items-center justify-center gap-2 text-red-950 font-black text-sm">
+                  <ShieldAlert className="w-5 h-5 text-red-600 animate-pulse" />
+                  <span>KỶ LUẬT: KHÓA VẮNG KHÔNG PHÉP DO GIAN LẬN THIẾT BỊ</span>
+                </div>
+                <p className="text-xs text-red-900 leading-relaxed font-semibold">
+                  Hệ thống phát hiện thiết bị này đã được sử dụng để điểm danh cho học sinh khác hôm nay.
+                  <br />
+                  Theo quy chế răn đe gian lận điểm danh: <b>Bạn bị mặc định VẮNG KHÔNG PHÉP hôm nay</b>.
+                </p>
+                <div className="p-3 bg-red-50 border border-red-300 rounded-lg text-left text-[11px] text-red-900 space-y-1.5">
+                  <div><b>• Lý do kỷ luật:</b> {todayR.lockedPenaltyReason || 'Dùng chung thiết bị điểm danh nhiều học sinh (Gian lận điểm danh hộ)'}</div>
+                  <div><b>• Mức phạt:</b> Khóa cứng trạng thái Vắng không phép, gửi báo cáo vi phạm trực tiếp lên BGH & GVCN.</div>
+                  <div className="pt-1 border-t border-red-200 text-red-700 font-bold">
+                    ⚖️ <u>Quy chế răn đe nghiêm ngặt:</u> Trạng thái này <b>KHÔNG AI CÓ THỂ THAY ĐỔI ĐƯỢC</b> (kể cả Ban Giám Hiệu hay Giáo viên chủ nhiệm).
+                  </div>
+                </div>
+              </div>
+            );
+          }
 
           // TH1: Ban Cán Sự đã điểm danh xác nhận có mặt hộ kèm ảnh -> Có mặt (BCS xác nhận)
           if (todayR?.status === 'proxy_pending') {

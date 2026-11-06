@@ -16,7 +16,9 @@ interface FlaggedRecord {
   studentName: string;
   action: string;
   updatedAt: number;
-  timeDiffHours: number;
+  timeDiffHours?: number;
+  type: 'device_duplicate' | 'late_update';
+  flagReason?: string;
 }
 
 export const AdminFlaggedModal: React.FC<AdminFlaggedModalProps> = ({ isOpen, onClose, classList }) => {
@@ -48,9 +50,24 @@ export const AdminFlaggedModal: React.FC<AdminFlaggedModalProps> = ({ isOpen, on
             if (dayData.records) {
               Object.keys(dayData.records).forEach((studentId) => {
                 const rec = dayData.records[studentId];
+
+                // 1. Check duplicate device flags (1 phone checking in for multiple students)
+                if (rec.flagged) {
+                  flags.push({
+                    lop: lopName,
+                    date: dateStr,
+                    studentId,
+                    studentName: rec.name,
+                    action: 'Cảnh báo trùng thiết bị điểm danh hộ',
+                    updatedAt: rec.checkinTime || targetDateEnd.getTime(),
+                    type: 'device_duplicate',
+                    flagReason: rec.flagReason || 'Cùng một thiết bị điểm danh cho nhiều học sinh trong ngày',
+                  });
+                }
+
+                // 2. Check late updates (updated > 24h after end of target date)
                 if (rec.lastUpdatedByTeacherAt && rec.lastUpdatedAction) {
                   const diffMs = rec.lastUpdatedByTeacherAt - targetDateEnd.getTime();
-                  // Flag if updated more than 24 hours after the END of the target date
                   if (diffMs > 24 * 60 * 60 * 1000) {
                     flags.push({
                       lop: lopName,
@@ -59,7 +76,8 @@ export const AdminFlaggedModal: React.FC<AdminFlaggedModalProps> = ({ isOpen, on
                       studentName: rec.name,
                       action: rec.lastUpdatedAction,
                       updatedAt: rec.lastUpdatedByTeacherAt,
-                      timeDiffHours: Math.floor(diffMs / (1000 * 60 * 60))
+                      timeDiffHours: Math.floor(diffMs / (1000 * 60 * 60)),
+                      type: 'late_update',
                     });
                   }
                 }
@@ -89,10 +107,10 @@ export const AdminFlaggedModal: React.FC<AdminFlaggedModalProps> = ({ isOpen, on
             </div>
             <div>
               <h2 className="text-lg font-extrabold text-[#1B241F]">
-                Cảnh báo Bổ sung trễ (Cờ đỏ)
+                Cờ Cảnh Báo Bất Thường &amp; Trùng Thiết Bị
               </h2>
               <p className="text-[12px] text-[#5B6A61] font-medium mt-0.5">
-                Danh sách các học sinh được giáo viên cập nhật điểm danh/phép sau hơn 24 giờ kể từ ngày nghỉ.
+                Danh sách phát hiện gian lận trùng thiết bị điểm danh hộ và các trường hợp cập nhật trễ sau 24 giờ.
               </p>
             </div>
           </div>
@@ -111,8 +129,8 @@ export const AdminFlaggedModal: React.FC<AdminFlaggedModalProps> = ({ isOpen, on
               <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <ShieldAlert className="w-8 h-8 opacity-50" />
               </div>
-              <h3 className="text-[#1B241F] font-bold mb-1">Không có vi phạm nào</h3>
-              <p className="text-[#5B6A61] text-sm">Hệ thống chưa ghi nhận trường hợp cập nhật điểm danh trễ hạn.</p>
+              <h3 className="text-[#1B241F] font-bold mb-1">Không có cảnh báo bất thường nào</h3>
+              <p className="text-[#5B6A61] text-sm">Hệ thống chưa ghi nhận trường hợp trùng thiết bị điểm danh hộ hoặc cập nhật điểm danh trễ hạn.</p>
             </div>
           ) : (
             <div className="bg-white rounded-xl border border-[#D7DCCB] overflow-hidden">
@@ -122,10 +140,10 @@ export const AdminFlaggedModal: React.FC<AdminFlaggedModalProps> = ({ isOpen, on
                     <tr>
                       <th className="py-3 px-4">Lớp</th>
                       <th className="py-3 px-4">Học sinh</th>
-                      <th className="py-3 px-4">Ngày điểm danh gốc</th>
-                      <th className="py-3 px-4">Thao tác của GV</th>
-                      <th className="py-3 px-4">Thời gian cập nhật (Thực tế)</th>
-                      <th className="py-3 px-4 text-right">Mức độ trễ</th>
+                      <th className="py-3 px-4">Ngày điểm danh</th>
+                      <th className="py-3 px-4">Loại cảnh báo / Thao tác</th>
+                      <th className="py-3 px-4">Thời gian ghi nhận</th>
+                      <th className="py-3 px-4 text-right">Phân loại</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#D7DCCB]/60">
@@ -142,23 +160,41 @@ export const AdminFlaggedModal: React.FC<AdminFlaggedModalProps> = ({ isOpen, on
                           {fmtDateVN(rec.date)}
                         </td>
                         <td className="py-3 px-4">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/50">
-                            {rec.action}
-                          </span>
+                          {rec.type === 'device_duplicate' ? (
+                            <div className="space-y-1">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-red-100 text-red-800 border border-red-300">
+                                🚩 Trùng thiết bị điểm danh hộ
+                              </span>
+                              <div className="text-[11px] text-red-700 italic">
+                                {rec.flagReason}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/50">
+                              {rec.action}
+                            </span>
+                          )}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-red-600">
+                          <div className="font-semibold text-[#1B241F]">
                             {fmtTime(rec.updatedAt)}
                           </div>
-                          <div className="text-[11px] text-red-600/70 mt-0.5">
+                          <div className="text-[11px] text-[#5B6A61] mt-0.5">
                             {fmtDateVN(new Date(rec.updatedAt).toISOString().split('T')[0])}
                           </div>
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <div className="inline-flex items-center gap-1 text-red-600 font-bold bg-red-50 px-2 py-1 rounded-md text-xs border border-red-100">
-                            <AlertTriangle className="w-3.5 h-3.5" />
-                            Trễ {rec.timeDiffHours} giờ
-                          </div>
+                          {rec.type === 'device_duplicate' ? (
+                            <div className="inline-flex items-center gap-1 text-red-700 font-extrabold bg-red-100 px-2.5 py-1 rounded-md text-xs border border-red-300">
+                              <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                              Cảnh báo gian lận
+                            </div>
+                          ) : (
+                            <div className="inline-flex items-center gap-1 text-amber-800 font-bold bg-amber-100 px-2 py-1 rounded-md text-xs border border-amber-200">
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                              Trễ {rec.timeDiffHours} giờ
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}

@@ -63,6 +63,8 @@ export interface AttendanceRecord {
   excuseDebtType?: 'has_paper' | 'owing_paper';
   debtSupplementDeadline?: string;
   note?: string;
+  isLockedAbsent?: boolean;
+  lockedPenaltyReason?: string;
 }
 
 export interface DayData {
