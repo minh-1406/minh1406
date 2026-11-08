@@ -40,6 +40,7 @@ import {
   AttendanceRecord,
   AttendanceStatus,
   TeacherAuthState,
+  SpecialCheckinRule,
 } from '../types';
 import {
   getRoster,
@@ -74,10 +75,14 @@ import {
   syncClearClassAttendanceData,
   subscribeDayData,
   syncAppendClassLog,
+  syncGetSpecialRules,
+  syncSaveSpecialRule,
+  syncDeleteSpecialRule,
 } from '../utils/firestoreSync';
 
 import { ReportsModal } from './ReportsModal';
 import { AdminLiveActivityModal } from './AdminLiveActivityModal';
+import { SpecialMonitoringSection } from './SpecialMonitoringSection';
 
 interface TeacherViewProps {
   selectedLop: string;
@@ -2511,6 +2516,9 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
               </div>
             )}
 
+            {/* Special Monitoring Section */}
+            <SpecialMonitoringSection roster={roster} />
+
             {/* Thống kê chuyên cần trực quan (Giống Quản trị) */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
               <div className="bg-white border-[1.5px] border-[#D7DCCB] rounded-xl p-3.5 shadow-2xs">
@@ -2998,12 +3006,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
                             {/* Col 6: Thao tác (GVCN) */}
                             <td className="py-3 px-3 text-right">
-                              {rec?.isLockedAbsent ? (
-                                <span className="inline-block px-2.5 py-1 bg-red-100 text-red-800 border border-red-300 rounded-lg text-[11px] font-extrabold" title="Hình phạt kỷ luật gian lận điểm danh: Không ai có thể chỉnh sửa">
-                                  🔒 Bị khóa cứng Vắng KP
-                                </span>
-                              ) : (
-                                <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                              <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                {rec?.isLockedAbsent && (
+                                  <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded text-[10px] font-extrabold border border-red-300">
+                                    🔒 Khóa Vắng KP (Thử nghiệm)
+                                  </span>
+                                )}
                                 {status === 'proxy_pending' && (
                                   <button
                                     type="button"
@@ -3119,9 +3127,8 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
-                              </div>
-                              )}
-                            </td>
+                               </div>
+                             </td>
                           </tr>
                         );
                       })

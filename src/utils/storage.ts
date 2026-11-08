@@ -316,16 +316,26 @@ function hashStr(str: string): string {
 }
 
 export function getDeviceFingerprint(): string {
+  const STORAGE_KEY = 'app_unique_device_uuid';
+  let uuid = '';
+  try {
+    uuid = localStorage.getItem(STORAGE_KEY) || '';
+    if (!uuid) {
+      // Generate robust random UUID token
+      uuid = 'dev_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem(STORAGE_KEY, uuid);
+    }
+  } catch (e) {
+    uuid = 'fallback_' + Math.random().toString(36).substring(2);
+  }
+
   const n = navigator;
   const s = screen;
   const parts = [
+    uuid, // Unique persistent token per browser installation
     n.userAgent,
     n.platform,
-    n.language,
     `${s.width}x${s.height}`,
-    s.colorDepth,
-    Intl.DateTimeFormat().resolvedOptions().timeZone,
-    n.hardwareConcurrency || 'na',
   ].join('|');
   return hashStr(parts);
 }
@@ -954,4 +964,32 @@ export function getAllDetailedAbsenceRecords(
   });
   return allAbsences.sort((a, b) => b.date.localeCompare(a.date));
 }
+
+/**
+ * Detect GPS spoofing / mock location (Phần mềm giả lập GPS / Fake GPS)
+ * Checks for unnatural accuracy values (e.g. exactly 0, 1, or < 2m), missing altitude anomalies, etc.
+ */
+export function detectMockLocation(pos: GeolocationPosition): { isMock: boolean; reason?: string } {
+  const coords = pos.coords;
+  const accuracy = coords.accuracy;
+
+  // Fake GPS apps often report accuracy = 0, 1, or extremely low/flat values without realistic environmental noise
+  if (accuracy === 0 || accuracy === 1 || (accuracy !== undefined && accuracy < 2)) {
+    return {
+      isMock: true,
+      reason: `Độ chính xác GPS bất thường (${accuracy}m). Có dấu hiệu sử dụng phần mềm giả lập vị trí (Fake GPS).`,
+    };
+  }
+
+  // Some mock location apps return 0 for altitude while claiming high accuracy or missing altitudeAccuracy
+  if (coords.altitude === 0 && coords.altitudeAccuracy === 0 && accuracy < 5) {
+    return {
+      isMock: true,
+      reason: `Thông số độ cao và độ chính xác giả lập (Altitude = 0). Phát hiện phần mềm vị trí ảo.`,
+    };
+  }
+
+  return { isMock: false };
+}
+
 

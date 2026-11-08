@@ -8,7 +8,7 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Student, ClassConfig, DayData, ClassOperationLog } from '../types';
+import { Student, ClassConfig, DayData, ClassOperationLog, SpecialCheckinRule, PendingDeviceRequest } from '../types';
 import {
   ROSTER_LIST_KEY,
   MASTER_PIN_KEY,
@@ -37,7 +37,115 @@ function getSchoolCollections(customSchoolId?: string) {
     daysCol: collection(db, `school_${schoolId}_days`),
     securityRef: doc(db, `school_${schoolId}_security`, 'settings'),
     pinsCol: collection(db, `school_${schoolId}_pins`),
+    specialRulesCol: collection(db, `school_${schoolId}_special_rules`),
+    pendingDevicesCol: collection(db, `school_${schoolId}_pending_devices`),
   };
+}
+
+/**
+ * Fetch all pending device requests
+ */
+export async function syncGetPendingDevices(): Promise<PendingDeviceRequest[]> {
+  try {
+    const cols = getSchoolCollections();
+    const snap = await getDocs(cols.pendingDevicesCol);
+    const requests: PendingDeviceRequest[] = [];
+    snap.forEach((d) => {
+      requests.push(d.data() as PendingDeviceRequest);
+    });
+    sSet('pendingDevices', requests);
+    return requests;
+  } catch (e) {
+    console.error('Error fetching pending devices:', e);
+    return sGet<PendingDeviceRequest[]>('pendingDevices', []);
+  }
+}
+
+/**
+ * Save a pending device request
+ */
+export async function syncSavePendingDevice(req: PendingDeviceRequest): Promise<void> {
+  try {
+    const cols = getSchoolCollections();
+    await setDoc(doc(cols.pendingDevicesCol, req.id), req);
+    const list = await syncGetPendingDevices();
+    if (!list.some(r => r.id === req.id)) {
+      list.push(req);
+      sSet('pendingDevices', list);
+    }
+  } catch (e) {
+    console.error('Error saving pending device request:', e);
+  }
+}
+
+/**
+ * Delete a pending device request (approve or reject)
+ */
+export async function syncDeletePendingDevice(id: string): Promise<void> {
+  try {
+    const cols = getSchoolCollections();
+    await deleteDoc(doc(cols.pendingDevicesCol, id));
+    const list = await syncGetPendingDevices();
+    const filtered = list.filter(r => r.id !== id);
+    sSet('pendingDevices', filtered);
+  } catch (e) {
+    console.error('Error deleting pending device request:', e);
+  }
+}
+
+/**
+ * Fetch all special rules
+ */
+export async function syncGetSpecialRules(): Promise<SpecialCheckinRule[]> {
+  try {
+    const cols = getSchoolCollections();
+    const snap = await getDocs(cols.specialRulesCol);
+    const rules: SpecialCheckinRule[] = [];
+    snap.forEach((d) => {
+      rules.push(d.data() as SpecialCheckinRule);
+    });
+    sSet('specialRules', rules);
+    return rules;
+  } catch (e) {
+    console.error('Error fetching special rules:', e);
+    return sGet<SpecialCheckinRule[]>('specialRules', []);
+  }
+}
+
+/**
+ * Save/Update a special rule
+ */
+export async function syncSaveSpecialRule(rule: SpecialCheckinRule): Promise<void> {
+  try {
+    const cols = getSchoolCollections();
+    await setDoc(doc(cols.specialRulesCol, rule.studentId), rule);
+    
+    // Update local cache
+    const rules = await syncGetSpecialRules();
+    const index = rules.findIndex(r => r.studentId === rule.studentId);
+    if (index !== -1) rules[index] = rule;
+    else rules.push(rule);
+    sSet('specialRules', rules);
+  } catch (e) {
+    console.error('Error saving special rule:', e);
+  }
+}
+
+/**
+ * Delete a special rule
+ */
+export async function syncDeleteSpecialRule(studentId: string): Promise<void> {
+  try {
+    const cols = getSchoolCollections();
+    await deleteDoc(doc(cols.specialRulesCol, studentId));
+    
+    // Update local cache
+    const rules = await syncGetSpecialRules();
+    const filtered = rules.filter(r => r.studentId !== studentId);
+    sSet('specialRules', filtered);
+  } catch (e) {
+    console.error('Error deleting special rule:', e);
+  }
 }
 
 /**

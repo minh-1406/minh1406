@@ -35,9 +35,10 @@ import {
   calculateSupplementDeadline,
   getSchoolId,
   format24hDateTime,
+  detectMockLocation,
 } from '../utils/storage';
-import { Student, DayData, AttendanceStatus } from '../types';
-import { syncSaveDayData, syncAppendClassLog } from '../utils/firestoreSync';
+import { Student, DayData, AttendanceStatus, SpecialCheckinRule } from '../types';
+import { syncSaveDayData, syncAppendClassLog, syncGetSpecialRules, syncSavePendingDevice, syncGetPendingDevices } from '../utils/firestoreSync';
 import { getSafePhotoCaptureTime, verifyPhotoExifDateSafe, checkDuplicatePhotoInClass } from '../utils/exifHelper';
 
 interface StudentViewProps {
@@ -181,6 +182,15 @@ export const StudentView: React.FC<StudentViewProps> = ({
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
+          const mockCheck = detectMockLocation(pos);
+          if (mockCheck.isMock) {
+            setMonitorStatus({
+              type: 'err',
+              msg: `⚠️ Phát hiện giả lập GPS / Fake GPS (BCS): ${mockCheck.reason}. Điểm danh hộ bị từ chối!`,
+            });
+            setIsSubmittingMonitor(false);
+            return;
+          }
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
           const distance = haversine(lat, lng, cfg.lat, cfg.lng);
@@ -501,8 +511,17 @@ export const StudentView: React.FC<StudentViewProps> = ({
     });
 
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         try {
+          const mockCheck = detectMockLocation(pos);
+          if (mockCheck.isMock) {
+            setCheckinStatus({
+              type: 'err',
+              msg: `⚠️ Phát hiện giả lập GPS / Fake GPS: ${mockCheck.reason}. Điểm danh GPS bị từ chối!`,
+            });
+            setIsCheckingIn(false);
+            return;
+          }
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
           const distance = haversine(lat, lng, cfg.lat, cfg.lng);
@@ -565,14 +584,34 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
           const historyKey = `deviceHistory:${cleanId}`;
           const history = sGet<string[]>(historyKey, []);
-          if (history.length > 0 && !history.includes(fp)) {
-            flagged = true;
-            flagReason =
-              'Học sinh điểm danh từ một thiết bị khác với các lần trước.';
-          }
+
           if (!history.includes(fp)) {
+            // Check if already approved by GVCN in local or storage cache
+            const approvedKey = `approvedDevice:${cleanId}:${fp}`;
+            const isApproved = sGet<boolean>(approvedKey, false);
+
+            if (history.length >= 5 && !isApproved) {
+              // Check remote/local pending list
+              const reqId = `${cleanId}_${fp}`;
+              await syncSavePendingDevice({
+                id: reqId,
+                studentId: cleanId,
+                studentName: cleanName || cleanId,
+                fingerprint: fp,
+                requestedAt: Date.now(),
+              });
+
+              setCheckinStatus({
+                type: 'err',
+                msg: `⚠️ YÊU CẦU PHÊ DUYỆT THIẾT BỊ MỚI: Bạn đã vượt quá 5 thiết bị cá nhân. Hệ thống đã gửi yêu cầu phê duyệt thiết bị này cho Giáo viên chủ nhiệm (GVCN). Vui lòng chờ GVCN duyệt để tiếp tục điểm danh!`,
+              });
+              setIsCheckingIn(false);
+              return;
+            }
+            flagged = true;
+            flagReason = 'Học sinh điểm danh từ một thiết bị mới (Trong ngưỡng 5 thiết bị an toàn).';
             history.push(fp);
-            sSet(historyKey, history.slice(-5));
+            sSet(historyKey, history);
           }
 
           deviceUsage[fp] = cleanId;

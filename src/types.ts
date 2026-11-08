@@ -143,3 +143,24 @@ export interface ClassOperationLog {
 }
 
 
+export interface TimeSlot {
+  startTime: string; // "08:30"
+  endTime: string;   // "09:15"
+}
+
+export interface SpecialCheckinRule {
+  studentId: string;
+  studentName: string;
+  timeSlots: TimeSlot[];
+  forceGps: boolean;
+  forcePhoto: boolean;
+  isActive: boolean;
+}
+
+export interface PendingDeviceRequest {
+  id: string; // studentId + "_" + fp
+  studentId: string;
+  studentName: string;
+  fingerprint: string;
+  requestedAt: number;
+}
