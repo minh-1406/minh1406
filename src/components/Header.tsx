@@ -6,6 +6,7 @@ import {
   Lock,
   Unlock,
   BookOpen,
+  QrCode,
 } from 'lucide-react';
 import { UserRole } from '../types';
 import { getSchoolId, getSchoolName, getSchoolLogo } from '../utils/storage';
@@ -14,6 +15,7 @@ import logoImg from '../assets/images/app-logo.jpg';
 interface HeaderProps {
   role: UserRole;
   setRole: (role: UserRole) => void;
+  lockedRole?: UserRole | null;
   isTeacherUnlocked: boolean;
   onLockTeacher: () => void;
   isAdminUnlocked: boolean;
@@ -21,11 +23,13 @@ interface HeaderProps {
   isUnionUnlocked: boolean;
   onLockUnion: () => void;
   onOpenGuide?: () => void;
+  onOpenRoleLinks?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   role,
   setRole,
+  lockedRole,
   isTeacherUnlocked,
   onLockTeacher,
   isAdminUnlocked,
@@ -33,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
   isUnionUnlocked,
   onLockUnion,
   onOpenGuide,
+  onOpenRoleLinks,
 }) => {
   const [schoolId, setSchoolId] = useState<string>(getSchoolId());
   const [schoolName, setSchoolName] = useState<string>(getSchoolName());
@@ -61,6 +66,19 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   const hasSchool = schoolName && schoolName !== 'DEFAULT';
+
+  const getRoleBadgeLabel = (r: UserRole) => {
+    switch (r) {
+      case 'student':
+        return 'Cổng Học Sinh';
+      case 'teacher':
+        return 'Cổng Giáo Viên Chủ Nhiệm';
+      case 'union':
+        return 'Cổng Đoàn Trường';
+      case 'admin':
+        return 'Cổng Quản Trị Hệ Thống';
+    }
+  };
 
   return (
     <header className="flex justify-between items-end gap-4 flex-wrap border-b-2 border-[#1F3B32] pb-4 mb-6">
@@ -100,75 +118,96 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex bg-[#FBFAF5] border-[1.5px] border-[#1F3B32] rounded-full p-1 shadow-xs">
-          <button
-            id="btnTeacherRole"
-            type="button"
-            onClick={() => setRole('teacher')}
-            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
-              role === 'teacher'
-                ? 'bg-[#1F3B32] text-[#F4F0E4] shadow-xs'
-                : 'text-[#1F3B32] hover:bg-[#1F3B32]/10'
-            }`}
-          >
-            {isTeacherUnlocked ? (
-              <Unlock className="w-3.5 h-3.5 text-emerald-400" />
-            ) : (
-              <Lock className="w-3.5 h-3.5" />
-            )}
-            <span>Giáo viên</span>
-          </button>
+        {lockedRole ? (
+          <div className="flex items-center gap-2 bg-[#1F3B32] text-[#F4F0E4] px-4 py-2 rounded-full font-bold text-xs sm:text-sm shadow-xs">
+            <UserCheck className="w-4 h-4 text-emerald-300" />
+            <span>{getRoleBadgeLabel(lockedRole)}</span>
+          </div>
+        ) : (
+          <div className="flex bg-[#FBFAF5] border-[1.5px] border-[#1F3B32] rounded-full p-1 shadow-xs">
+            <button
+              id="btnTeacherRole"
+              type="button"
+              onClick={() => setRole('teacher')}
+              className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
+                role === 'teacher'
+                  ? 'bg-[#1F3B32] text-[#F4F0E4] shadow-xs'
+                  : 'text-[#1F3B32] hover:bg-[#1F3B32]/10'
+              }`}
+            >
+              {isTeacherUnlocked ? (
+                <Unlock className="w-3.5 h-3.5 text-emerald-400" />
+              ) : (
+                <Lock className="w-3.5 h-3.5" />
+              )}
+              <span>Giáo viên</span>
+            </button>
 
-          <button
-            id="btnAdminRole"
-            type="button"
-            onClick={() => setRole('admin')}
-            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
-              role === 'admin'
-                ? 'bg-[#1F3B32] text-[#F4F0E4] shadow-xs'
-                : 'text-[#1F3B32] hover:bg-[#1F3B32]/10'
-            }`}
-          >
-            {isAdminUnlocked ? (
-              <Unlock className="w-3.5 h-3.5 text-emerald-400" />
-            ) : (
-              <Lock className="w-3.5 h-3.5" />
-            )}
-            <span>Quản trị</span>
-          </button>
+            <button
+              id="btnAdminRole"
+              type="button"
+              onClick={() => setRole('admin')}
+              className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
+                role === 'admin'
+                  ? 'bg-[#1F3B32] text-[#F4F0E4] shadow-xs'
+                  : 'text-[#1F3B32] hover:bg-[#1F3B32]/10'
+              }`}
+            >
+              {isAdminUnlocked ? (
+                <Unlock className="w-3.5 h-3.5 text-emerald-400" />
+              ) : (
+                <Lock className="w-3.5 h-3.5" />
+              )}
+              <span>Quản trị</span>
+            </button>
 
-          <button
-            id="btnUnionRole"
-            type="button"
-            onClick={() => setRole('union')}
-            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
-              role === 'union'
-                ? 'bg-[#1F3B32] text-[#F4F0E4] shadow-xs'
-                : 'text-[#1F3B32] hover:bg-[#1F3B32]/10'
-            }`}
-          >
-            {isUnionUnlocked ? (
-              <Unlock className="w-3.5 h-3.5 text-emerald-400" />
-            ) : (
-              <Lock className="w-3.5 h-3.5" />
-            )}
-            <span>Đoàn trường</span>
-          </button>
+            <button
+              id="btnUnionRole"
+              type="button"
+              onClick={() => setRole('union')}
+              className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
+                role === 'union'
+                  ? 'bg-[#1F3B32] text-[#F4F0E4] shadow-xs'
+                  : 'text-[#1F3B32] hover:bg-[#1F3B32]/10'
+              }`}
+            >
+              {isUnionUnlocked ? (
+                <Unlock className="w-3.5 h-3.5 text-emerald-400" />
+              ) : (
+                <Lock className="w-3.5 h-3.5" />
+              )}
+              <span>Đoàn trường</span>
+            </button>
 
+            <button
+              id="btnStudentRole"
+              type="button"
+              onClick={() => setRole('student')}
+              className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
+                role === 'student'
+                  ? 'bg-[#1F3B32] text-[#F4F0E4] shadow-xs'
+                  : 'text-[#1F3B32] hover:bg-[#1F3B32]/10'
+              }`}
+            >
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>Học sinh</span>
+            </button>
+          </div>
+        )}
+
+        {/* Button to generate Link & QR for roles (Shown for Teacher, Admin, Union or unlocked views) */}
+        {onOpenRoleLinks && lockedRole !== 'student' && (
           <button
-            id="btnStudentRole"
+            id="btnOpenRoleLinks"
             type="button"
-            onClick={() => setRole('student')}
-            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
-              role === 'student'
-                ? 'bg-[#1F3B32] text-[#F4F0E4] shadow-xs'
-                : 'text-[#1F3B32] hover:bg-[#1F3B32]/10'
-            }`}
+            onClick={onOpenRoleLinks}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#1F3B32] hover:bg-[#245346] text-[#F4F0E4] rounded-full font-bold text-xs sm:text-sm transition-colors cursor-pointer shadow-xs"
+            title="Lấy Link & Mã QR riêng cho Học sinh, Giáo viên, Đoàn trường, Quản trị"
           >
-            <UserCheck className="w-3.5 h-3.5" />
-            <span>Học sinh</span>
+            <QrCode className="w-3.5 h-3.5 text-emerald-300" />
+            <span>Link &amp; Mã QR</span>
           </button>
-        </div>
+        )}
 
         {role === 'teacher' && isTeacherUnlocked && (
           <button
@@ -225,5 +264,6 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+
 
 

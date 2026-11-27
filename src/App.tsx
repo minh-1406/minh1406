@@ -14,6 +14,7 @@ import { UnionLockScreen } from './components/UnionLockScreen';
 import { StudentView } from './components/StudentView';
 import { LightboxModal } from './components/LightboxModal';
 import { UserGuideModal } from './components/UserGuideModal';
+import { RoleLinksModal } from './components/RoleLinksModal';
 import { UserRole, TeacherAuthState, AdminAuthState, UnionAuthState } from './types';
 import {
   initializeSampleDataIfEmpty,
@@ -21,13 +22,30 @@ import {
   getSchoolId,
 } from './utils/storage';
 import { syncFromFirestore, subscribeAllSchoolData } from './utils/firestoreSync';
-import { Info, ShieldAlert } from 'lucide-react';
+
+function getUrlRoleParam(): UserRole | null {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  const r = params.get('role')?.trim().toLowerCase();
+  if (r === 'student' || r === 'teacher' || r === 'admin' || r === 'union') {
+    return r as UserRole;
+  }
+  return null;
+}
+
+function getUrlLopParam(): string {
+  if (typeof window === 'undefined') return '';
+  const params = new URLSearchParams(window.location.search);
+  return params.get('lop')?.trim() || '';
+}
 
 export default function App() {
-  const [role, setRole] = useState<UserRole>('student');
-  const [selectedLop, setSelectedLop] = useState<string>('');
+  const [lockedRole] = useState<UserRole | null>(() => getUrlRoleParam());
+  const [role, setRole] = useState<UserRole>(() => getUrlRoleParam() || 'student');
+  const [selectedLop, setSelectedLop] = useState<string>(() => getUrlLopParam());
   const [lightboxSrc, setLightboxSrc] = useState<any>(null);
   const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
+  const [showRoleLinksModal, setShowRoleLinksModal] = useState<boolean>(false);
   const [currentSchoolId, setCurrentSchoolId] = useState<string>(() => getSchoolId());
 
   // Teacher Authentication state
@@ -116,11 +134,14 @@ export default function App() {
 
   useEffect(() => {
     initializeSampleDataIfEmpty();
+    const urlLop = getUrlLopParam();
 
     // 1. Initial sync from Firestore for this isolated school
     syncFromFirestore().then(() => {
       const classes = getLopList();
-      if (classes.length > 0) {
+      if (urlLop && classes.includes(urlLop)) {
+        setSelectedLop(urlLop);
+      } else if (classes.length > 0) {
         setSelectedLop((prev) => (prev && classes.includes(prev) ? prev : classes[0]));
       } else {
         setSelectedLop('');
@@ -130,7 +151,9 @@ export default function App() {
     // 2. Setup real-time listener across all devices for this isolated school
     const unsubscribe = subscribeAllSchoolData(() => {
       const classes = getLopList();
-      if (classes.length > 0) {
+      if (urlLop && classes.includes(urlLop)) {
+        setSelectedLop((prev) => prev || urlLop);
+      } else if (classes.length > 0) {
         setSelectedLop((prev) => (prev && classes.includes(prev) ? prev : classes[0]));
       } else {
         setSelectedLop('');
@@ -172,7 +195,9 @@ export default function App() {
       activeClass: '',
       isMaster: false,
     });
-    setRole('student');
+    if (!lockedRole) {
+      setRole('student');
+    }
   };
 
   // Handle successful admin login
@@ -188,7 +213,9 @@ export default function App() {
     updateAdminAuth({
       isAuthenticated: false,
     });
-    setRole('student');
+    if (!lockedRole) {
+      setRole('student');
+    }
   };
 
   // Handle successful union login
@@ -204,7 +231,9 @@ export default function App() {
     updateUnionAuth({
       isAuthenticated: false,
     });
-    setRole('student');
+    if (!lockedRole) {
+      setRole('student');
+    }
   };
 
   const isTeacherUnlockedForCurrent =
@@ -218,6 +247,7 @@ export default function App() {
         <Header
           role={role}
           setRole={setRole}
+          lockedRole={lockedRole}
           isTeacherUnlocked={teacherAuth.isAuthenticated}
           onLockTeacher={handleLockTeacher}
           isAdminUnlocked={adminAuth.isAuthenticated}
@@ -225,6 +255,7 @@ export default function App() {
           isUnionUnlocked={unionAuth.isAuthenticated}
           onLockUnion={handleLockUnion}
           onOpenGuide={() => setShowGuideModal(true)}
+          onOpenRoleLinks={() => setShowRoleLinksModal(true)}
         />
 
         {/* Dynamic Views */}
@@ -265,7 +296,9 @@ export default function App() {
                   <TeacherLockScreen
                     targetLop={selectedLop}
                     onSuccess={handleTeacherAuthSuccess}
-                    onCancel={() => setRole('student')}
+                    onCancel={() => {
+                      if (!lockedRole) setRole('student');
+                    }}
                   />
                 </motion.div>
               )
@@ -293,7 +326,9 @@ export default function App() {
                 >
                   <AdminLockScreen
                     onSuccess={handleAdminAuthSuccess}
-                    onCancel={() => setRole('student')}
+                    onCancel={() => {
+                      if (!lockedRole) setRole('student');
+                    }}
                   />
                 </motion.div>
               )
@@ -322,7 +357,9 @@ export default function App() {
                 >
                   <UnionLockScreen
                     onSuccess={handleUnionAuthSuccess}
-                    onCancel={() => setRole('student')}
+                    onCancel={() => {
+                      if (!lockedRole) setRole('student');
+                    }}
                   />
                 </motion.div>
               )
@@ -363,6 +400,14 @@ export default function App() {
       <UserGuideModal
         isOpen={showGuideModal}
         onClose={() => setShowGuideModal(false)}
+      />
+
+      {/* Dedicated Role Links & QR Code Generator Modal */}
+      <RoleLinksModal
+        isOpen={showRoleLinksModal}
+        onClose={() => setShowRoleLinksModal(false)}
+        currentRole={role}
+        selectedLop={selectedLop}
       />
     </div>
   );
